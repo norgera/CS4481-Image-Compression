@@ -32,11 +32,31 @@ void Decode_Using_DPCM (char *in_filename_Ptr) {
     fscanf(dpcmPointer, "%d ", &predArray[0][0]);
     image.image[0][0] = predArray[0][0] + 128;
 
-    // Decode the rows and columns of the image
-    decodeTopWestRow(dpcmPointer, &image, predArray, width);
-    decodeSecondNorthRow(dpcmPointer, &image, predArray, width);
-    decodeFirstAndSecondNorthColumns(dpcmPointer, &image, predArray, height);
-    decodeLastNorthColumn(dpcmPointer, &image, predArray, width, height);
+    // Decode the top west row
+    for(col = 1; col < width; col++) {
+        fscanf(dpcmPointer, "%d ", &predArray[0][col]);
+        image.image[0][col] = predArray[0][col] + image.image[0][col-1];
+    }
+
+    // Decode the second north row
+    for(col = 0; col < width; col++) {
+        fscanf(dpcmPointer, "%d ", &predArray[1][col]);
+        image.image[1][col] = predArray[1][col] + image.image[0][col];
+    }
+
+    // Decode the first and second north columns
+    for(row = 2; row < height; row++) {
+        for(col = 0; col < 2; col++) {
+            fscanf(dpcmPointer, "%d ", &predArray[row][col]);
+            image.image[row][col] = predArray[row][col] + image.image[row-1][col];
+        }
+    }
+
+    // Decode the last north column
+    for(row = 2; row < height; row++) {
+        fscanf(dpcmPointer, "%d ", &predArray[row][width-1]);
+        image.image[row][width-1] = predArray[row][width-1] + image.image[row-1][width-1];
+    }
 
 
     // Decode the rest of the image based on the prediction rule
@@ -187,40 +207,3 @@ void Decode_Using_DPCM (char *in_filename_Ptr) {
     free_PGM_Image(&image);
 
 }
-
-//Helper functions to decode the rows and columns of the image
-void decodeTopWestRow(FILE *dpcmPointer, struct PGM_Image *image, int predArray[][image->width], int width) {
-    for(int col = 1; col < width; col++) {
-        fscanf(dpcmPointer, "%d ", &predArray[0][col]);
-        image->image[0][col] = predArray[0][col] + image->image[0][col-1];
-    }
-}
-
-void decodeSecondNorthRow(FILE *dpcmPointer, struct PGM_Image *image, int predArray[][image->width], int width) {
-    for(int col = 0; col < width; col++) {
-        fscanf(dpcmPointer, "%d ", &predArray[1][col]);
-        image->image[1][col] = predArray[1][col] + image->image[0][col];
-    }
-}
-
-void decodeFirstAndSecondNorthColumns(FILE *dpcmPointer, struct PGM_Image *image, int predArray[][image->width], int height) {
-    for(int row = 2; row < height; row++) {
-        for(int col = 0; col < 2; col++) {
-            fscanf(dpcmPointer, "%d ", &predArray[row][col]);
-            image->image[row][col] = predArray[row][col] + image->image[row-1][col];
-        }
-    }
-}
-
-void decodeLastNorthColumn(FILE *dpcmPointer, struct PGM_Image *image, int predArray[][image->width], int width, int height) {
-    for(int row = 2; row < height; row++) {
-        fscanf(dpcmPointer, "%d ", &predArray[row][width-1]);
-        image->image[row][width-1] = predArray[row][width-1] + image->image[row-1][width-1];
-    }
-}
-
-
-
-
-
-
