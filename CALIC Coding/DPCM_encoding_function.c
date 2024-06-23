@@ -208,45 +208,41 @@ void Encode_Using_DPCM(char *in_PGM_filename_Ptr, int prediction_rule,
             printf("Incorrect prediction rule\n");
     }
 
-    // Calculate the mean and standard deviation of the error
-    float meanError = 0.0;
-    int valError;
+    // Get the frequency and sum
     for(row = 0; row < height; row++) {
         for(col = 0; col < width; col++) {
-            valError = abs(predArray[row][col]);
-            arrayError[valError]++;
-            sumError += valError;
-            meanError = ((meanError * (row * width + col)) + valError) / (row * width + col + 1);
+            error_array[abs(prediction_array[row][col])]++; // frequency
+            error_sum += abs(prediction_array[row][col]); // for mean and stdev
         }
     }
 
-    // Calculate the standard deviation
-    float stdError = 0.0,
-            tempDiff;
-    for(row = 0; row < height; row++) {
-        for(col = 0; col < width; col++) {
-            tempDiff = abs(predArray[row][col]) - meanError;
-            stdError += tempDiff * tempDiff;
-        }
-    }
-    stdError = sqrt(stdError / (height * width));
-
-    // Write the error values to the error file
-    for(int i = 0; i < MGV+1; i++) {
-        if(arrayError[i] != 0) {
-            fprintf(errorPointer, "%d,%d\n", i, arrayError[i]);
-        }
-    }
+    // Write the error values and get sum for CSV and calculations
+    for(int i = 0; i < max_gray_value+1; i++)
+        if(error_array[i] != 0)
+            fprintf(errors_file_pointer, "%d,%d\n", i, error_array[i]);
 
     // Close the files
     fclose(filePointer);
     fclose(errorPointer);
 
-    // Set the pointers to the mean and standard deviation of the error
+    // Calculate the average and standard deviation of the errors
+    float error_mean, error_std = 0.0;
+
+    error_mean = (float) error_sum / (height * width);
+
+    for(row = 0; row < height; row++) {
+        for(col = 0; col < width; col++) {
+            error_std += pow(abs(prediction_array[row][col]) - error_mean, 2);
+        }
+    }
+
+    error_std = sqrt(error_std / (height * width));
+
+    // Save values in function parameters
     *avg_abs_error_Ptr = meanError;
     *std_abs_error_Ptr = stdError;
 
-    // Free the image
+    // Free memory
     free_PGM_Image(&image);
 }
 
